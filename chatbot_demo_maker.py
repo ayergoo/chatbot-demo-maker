@@ -12,6 +12,11 @@ from openai import OpenAI
 import time
 import json
 
+# Configuration constants
+MAX_TEXT_LENGTH_PER_PAGE = 4000  # Maximum characters per page to send to OpenAI
+MAX_COMBINED_TEXT_LENGTH = 10000  # Maximum combined text length for scenario generation
+API_RATE_LIMIT_DELAY = 1  # Seconds to wait between API calls
+
 
 class WebsiteScraper:
     """Scrapes all pages from a website and extracts text content"""
@@ -123,7 +128,7 @@ Clean and format the following text from {page_url}:
 - Make it concise and well-structured
 
 Text to clean:
-{text[:4000]}  
+{text[:MAX_TEXT_LENGTH_PER_PAGE]}  
 
 Return only the cleaned text."""
 
@@ -156,8 +161,8 @@ Return only the cleaned text."""
                 'url': page['url'],
                 'cleaned_text': cleaned_text
             })
-            # Rate limiting
-            time.sleep(1)
+            # Rate limiting to respect API limits
+            time.sleep(API_RATE_LIMIT_DELAY)
         
         return cleaned_pages
     
@@ -170,8 +175,8 @@ Return only the cleaned text."""
         ])
         
         # Truncate if too long (to fit in API limits)
-        if len(combined_text) > 10000:
-            combined_text = combined_text[:10000] + "..."
+        if len(combined_text) > MAX_COMBINED_TEXT_LENGTH:
+            combined_text = combined_text[:MAX_COMBINED_TEXT_LENGTH] + "..."
         
         print("\nGenerating chatbot scenario...")
         
