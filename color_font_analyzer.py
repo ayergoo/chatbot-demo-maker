@@ -373,7 +373,14 @@ class FontExtractor:
         
         # Store font information
         if font_family:
-            font_key = font_family.strip('\'"').split(',')[0].strip()
+            # Extract first font from family list, handling quotes properly
+            first_font = font_family.split(',')[0].strip()
+            # Remove matching quotes from start and end
+            if (first_font.startswith('"') and first_font.endswith('"')) or \
+               (first_font.startswith("'") and first_font.endswith("'")):
+                first_font = first_font[1:-1]
+            
+            font_key = first_font.strip()
             font_data = self.fonts[font_key]
             font_data['family'] = font_family
             font_data['selectors'].add(selector)
