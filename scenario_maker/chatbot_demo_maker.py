@@ -5,23 +5,32 @@ Chatbot Demo Maker - Automatically scrapes website content and creates chatbot s
 
 import os
 import sys
+import argparse
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 from openai import OpenAI
 import time
 import json
+from typing import Optional
 
+SAVE_PATH_BASE = "C:/Data/scraped_websites/"
+SAVE_PATH_DOMAIN = SAVE_PATH_BASE + "{domain}/"
+SAVE_RAW = SAVE_PATH_DOMAIN + "raw/"
+SAVE_CLEAN = SAVE_PATH_DOMAIN + "clean/"
 
 class WebsiteScraper:
     """Scrapes all pages from a website and extracts text content"""
     
-    def __init__(self, base_url, max_pages=50):
+    def __init__(self, base_url, max_pages=50, max_chars_per_page=10000, render_js=False, render_timeout_ms=15000):
         self.base_url = base_url
         self.max_pages = max_pages
+        self.max_chars_per_page = max_chars_per_page
         self.visited_urls = set()
         self.domain = urlparse(base_url).netloc
         self.pages_content = []
+        self.render_js = render_js
+        self.render_timeout_ms = render_timeout_ms
         
     def is_valid_url(self, url):
         """Check if URL belongs to the same domain"""
@@ -37,7 +46,7 @@ class WebsiteScraper:
             script.decompose()
         
         # Get text
-        text = soup.get_text()
+        text = soup.get_text(separator=' ')
         
         # Break into lines and remove leading/trailing space
         lines = (line.strip() for line in text.splitlines())
@@ -47,25 +56,56 @@ class WebsiteScraper:
         text = '\n'.join(chunk for chunk in chunks if chunk)
         
         return text
-    
+
+    def _fetch_html(self, url) -> Optional[str]:
+        if not self.render_js:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            content_type = response.headers.get('content-type', '')
+            if 'text/html' not in content_type:
+                return None
+            return response.text
+
+        try:
+            from playwright.sync_api import sync_playwright
+        except Exception as e:
+            raise RuntimeError(
+                "Playwright is required for JS-rendered pages. Install it with: pip install playwright; playwright install"
+            ) from e
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(url, wait_until="networkidle", timeout=self.render_timeout_ms)
+            html = page.content()
+            browser.close()
+            return html
+
     def scrape_page(self, url):
         """Scrape a single page and return its text content"""
         try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            
-            # Only process HTML content
-            content_type = response.headers.get('content-type', '')
-            if 'text/html' not in content_type:
+            html = self._fetch_html(url)
+            if not html:
                 return None, []
             
-            text = self.extract_text_from_html(response.content)
-            
+            text = self.extract_text_from_html(html)
+            if self.max_chars_per_page and len(text) > self.max_chars_per_page:
+                text = text[: self.max_chars_per_page]
+            print('page char length: ', len(text))
             # Extract links for further crawling
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(html, 'html.parser')
+            
             links = []
             for link in soup.find_all('a', href=True):
-                absolute_url = urljoin(url, link['href'])
+                href = link.get('href') or ''
+                if (
+                    not href
+                    or href.startswith('mailto')
+                    or href == '/'
+                    ):
+                    continue
+
+                absolute_url = urljoin(url, href)
                 # Remove fragments
                 absolute_url = absolute_url.split('#')[0]
                 if self.is_valid_url(absolute_url) and absolute_url not in self.visited_urls:
@@ -97,13 +137,37 @@ class WebsiteScraper:
                     'url': url,
                     'text': text
                 })
-            
+
             # Add new links to visit
             urls_to_visit.extend([link for link in links if link not in self.visited_urls])
         
         print(f"\nScraped {len(self.pages_content)} pages successfully")
         return self.pages_content
 
+    @staticmethod
+    def save_pages_content(content_list:list, dir:str):
+        """Save pages to location"""
+        for i, page in enumerate(content_list):
+            url = page['url']
+            
+            # remove http, so it can be split by /
+            if 'www' in url:
+                url = url.split('www', 1)[1]
+            if 'http' in url:
+                url = url.split('.', 1)[1]
+
+            ext = url.split('/', 1)
+            if len(ext) > 1:
+                ext = ext[1]
+            else:
+                ext = ext[0]
+
+            ext_norm = ext.replace('/', '_').replace('.', '_')
+            
+            filename = f'{i}_{ext_norm}.json'
+            save_path = dir + filename
+            with open(save_path, 'w') as f:
+                json.dump(page, f, indent=2)
 
 class ChatbotDemoMaker:
     """Creates chatbot demo scenarios using OpenAI API"""
@@ -128,7 +192,7 @@ Text to clean:
 Return only the cleaned text."""
 
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that cleans and formats website content."},
                     {"role": "user", "content": prompt}
@@ -234,26 +298,40 @@ Make it realistic and based on the actual information provided. The scenario sho
             }
 
 
+def normalize_domain_name(domain_name):
+    if 'www' in domain_name:
+        domain_name = domain_name.split('.', 1)[1]
+
+    if 'http' in domain_name:
+        domain_name = domain_name.split('/', 2)[-1]
+
+    return domain_name.replace('.', '_').replace('/', '_')[:80]
+
+def create_domain_dir(normalized_domain_name, skip_clean):
+    # norm_domain_name = normalize_domain_name(domain_name)
+    os.mkdir(SAVE_PATH_DOMAIN.format(domain=normalized_domain_name))
+    os.mkdir(SAVE_RAW.format(domain=normalized_domain_name))
+    if not skip_clean:
+        os.mkdir(SAVE_CLEAN.format(domain=normalized_domain_name))
+
 def main():
     """Main function to run the chatbot demo maker"""
-    
-    # Get OpenAI API key
-    api_key = os.environ.get('OPENAI_API_KEY')
-    if not api_key:
-        print("Error: OPENAI_API_KEY environment variable not set")
-        print("Please set it with: export OPENAI_API_KEY='your-api-key'")
-        sys.exit(1)
-    
+    parser = argparse.ArgumentParser(description="Chatbot Demo Maker")
+    parser.add_argument("url", nargs="?", help="Website URL to scrape")
+    parser.add_argument("--max-pages", type=int, default=50, help="Maximum pages to scrape (default: 50)")
+    parser.add_argument("--max-chars", type=int, default=10000, help="Maximum characters per page (default: 10000)")
+    parser.add_argument("--skip-clean", action="store_true", help="Skip OpenAI cleanup of pages")
+    args = parser.parse_args()
+
     # Get URL from command line or prompt
-    if len(sys.argv) > 1:
-        url = sys.argv[1]
-    else:
-        url = input("Enter the website URL to scrape: ").strip()
+    url = args.url or input("Enter the website URL to scrape: ").strip()
     
     if not url:
         print("Error: No URL provided")
         sys.exit(1)
     
+    url = url.strip().strip('/')
+
     # Add https:// if no protocol specified
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
@@ -262,24 +340,66 @@ def main():
     print(f"Chatbot Demo Maker")
     print(f"{'='*60}")
     print(f"Target URL: {url}\n")
+
+    # Step 0: Check if already exists
+    print("Step 0: Check if already been scraped...")
+    normalized_url = normalize_domain_name(url)
+    if os.path.exists(SAVE_PATH_DOMAIN.format(domain=normalized_url)):
+        print("Error: Domain already exists in scraped domains")
+        sys.exit(1)
+    else:
+        create_domain_dir(normalized_url, args.skip_clean)
+
+    # get save dirs
+    save_dir = SAVE_PATH_DOMAIN.format(domain=normalized_url)
+    save_raw_dir = SAVE_RAW.format(domain=normalized_url)
+    save_clean_dir = SAVE_CLEAN.format(domain=normalized_url)
     
     # Step 1: Scrape the website
     print("Step 1: Scraping website pages...")
-    scraper = WebsiteScraper(url, max_pages=50)
+    scraper = WebsiteScraper(
+        url,
+        max_pages=args.max_pages,
+        max_chars_per_page=args.max_chars,
+        render_js=True,
+    )
     pages_content = scraper.crawl()
     
     if not pages_content:
         print("Error: No pages were scraped successfully")
         sys.exit(1)
     
+    scraper.save_pages_content(pages_content, save_raw_dir)
+    print(f"Saved raw pages to: {save_raw_dir}")
+
+    # Get OpenAI API key
+    api_key = os.environ.get('OPENAI_API_KEY')
+    if not api_key:
+        print("Error: OPENAI_API_KEY environment variable not set")
+        print("Please set it with: export OPENAI_API_KEY='your-api-key'")
+        sys.exit(1)
+
     # Step 2: Clean the text using OpenAI
-    print("\nStep 2: Cleaning text with OpenAI...")
-    demo_maker = ChatbotDemoMaker(api_key)
-    cleaned_pages = demo_maker.process_all_pages(pages_content)
-    
+    if args.skip_clean:
+        print("\nStep 2: Skipping text cleanup...")
+        scenario_pages = [
+            {"url": page["url"], "cleaned_text": page["text"]}
+            for page in pages_content
+        ]
+    else:
+        print("\nStep 2: Cleaning text with OpenAI...")
+
+        demo_maker = ChatbotDemoMaker(api_key)
+        cleaned_pages = demo_maker.process_all_pages(pages_content)
+        scenario_pages = cleaned_pages
+        
+        scraper.save_pages_content(cleaned_pages, save_clean_dir)
+        print(f"Saved clean pages to: {save_clean_dir}")
+
     # Step 3: Create the chatbot scenario
     print("\nStep 3: Creating chatbot scenario...")
-    scenario = demo_maker.combine_and_create_scenario(cleaned_pages)
+    demo_maker = ChatbotDemoMaker(api_key)
+    scenario = demo_maker.combine_and_create_scenario(scenario_pages)
     
     # Display results
     print(f"\n{'='*60}")
@@ -299,13 +419,12 @@ def main():
     print(f"  {scenario['detailed_answer']}\n")
     
     # Save to file
-    output_file = "chatbot_scenario.json"
+    output_file = save_dir + "chatbot_scenario.json"
     with open(output_file, 'w') as f:
         json.dump({
             'source_url': url,
             'pages_scraped': len(pages_content),
             'scenario': scenario,
-            'cleaned_pages': cleaned_pages
         }, f, indent=2)
     
     print(f"{'='*60}")
@@ -314,4 +433,5 @@ def main():
 
 
 if __name__ == "__main__":
+    
     main()

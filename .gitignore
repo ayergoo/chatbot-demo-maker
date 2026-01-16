@@ -40,3 +40,5 @@ chatbot_scenario.json
 # OS
 .DS_Store
 Thumbs.db
+
+Pipfile*
