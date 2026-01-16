@@ -6,6 +6,7 @@ Chatbot Demo Maker - Automatically scrapes website content and creates chatbot s
 import os
 import sys
 import argparse
+import shutil
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
@@ -22,10 +23,9 @@ SAVE_CLEAN = SAVE_PATH_DOMAIN + "clean/"
 class WebsiteScraper:
     """Scrapes all pages from a website and extracts text content"""
     
-    def __init__(self, base_url, max_pages=50, max_chars_per_page=10000, render_js=False, render_timeout_ms=15000):
+    def __init__(self, base_url, max_pages=50, render_js=False, render_timeout_ms=30000):
         self.base_url = base_url
         self.max_pages = max_pages
-        self.max_chars_per_page = max_chars_per_page
         self.visited_urls = set()
         self.domain = urlparse(base_url).netloc
         self.pages_content = []
@@ -76,7 +76,7 @@ class WebsiteScraper:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
-            page.goto(url, wait_until="networkidle", timeout=self.render_timeout_ms)
+            page.goto(url, wait_until="domcontentloaded", timeout=self.render_timeout_ms)
             html = page.content()
             browser.close()
             return html
@@ -89,8 +89,6 @@ class WebsiteScraper:
                 return None, []
             
             text = self.extract_text_from_html(html)
-            if self.max_chars_per_page and len(text) > self.max_chars_per_page:
-                text = text[: self.max_chars_per_page]
             print('page char length: ', len(text))
             # Extract links for further crawling
             soup = BeautifulSoup(html, 'html.parser')
@@ -172,8 +170,9 @@ class WebsiteScraper:
 class ChatbotDemoMaker:
     """Creates chatbot demo scenarios using OpenAI API"""
     
-    def __init__(self, api_key):
+    def __init__(self, api_key, max_chars_per_page):
         self.client = OpenAI(api_key=api_key)
+        self.max_chars_per_page = max_chars_per_page
     
     def clean_text(self, text, page_url):
         """Clean and tidy up text from a webpage using OpenAI"""
@@ -187,7 +186,7 @@ Clean and format the following text from {page_url}:
 - Make it concise and well-structured
 
 Text to clean:
-{text[:4000]}  
+{text[:self.max_chars_per_page]}  
 
 Return only the cleaned text."""
 
@@ -256,7 +255,7 @@ Create a JSON response with the following structure:
 Make it realistic and based on the actual information provided. The scenario should showcase how the chatbot can help users learn about the company."""
 
             response = self.client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant that creates engaging chatbot scenarios."},
                     {"role": "user", "content": prompt}
@@ -360,13 +359,13 @@ def main():
     scraper = WebsiteScraper(
         url,
         max_pages=args.max_pages,
-        max_chars_per_page=args.max_chars,
         render_js=True,
     )
     pages_content = scraper.crawl()
     
     if not pages_content:
         print("Error: No pages were scraped successfully")
+        shutil.rmtree(save_dir)
         sys.exit(1)
     
     scraper.save_pages_content(pages_content, save_raw_dir)
@@ -377,7 +376,10 @@ def main():
     if not api_key:
         print("Error: OPENAI_API_KEY environment variable not set")
         print("Please set it with: export OPENAI_API_KEY='your-api-key'")
+        shutil.rmtree(save_dir)
         sys.exit(1)
+
+    demo_maker = ChatbotDemoMaker(api_key, args.max_chars)
 
     # Step 2: Clean the text using OpenAI
     if args.skip_clean:
@@ -388,8 +390,6 @@ def main():
         ]
     else:
         print("\nStep 2: Cleaning text with OpenAI...")
-
-        demo_maker = ChatbotDemoMaker(api_key)
         cleaned_pages = demo_maker.process_all_pages(pages_content)
         scenario_pages = cleaned_pages
         
@@ -398,7 +398,6 @@ def main():
 
     # Step 3: Create the chatbot scenario
     print("\nStep 3: Creating chatbot scenario...")
-    demo_maker = ChatbotDemoMaker(api_key)
     scenario = demo_maker.combine_and_create_scenario(scenario_pages)
     
     # Display results
