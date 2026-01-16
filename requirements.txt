@@ -2,3 +2,5 @@ beautifulsoup4
 requests
 openai
 playwright
+tinycss2
+webcolors

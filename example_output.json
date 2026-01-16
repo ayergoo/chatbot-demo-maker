@@ -1,0 +1,673 @@
+{
+  "source": "test_page.html",
+  "summary": {
+    "total_unique_colors": 33,
+    "total_unique_fonts": 2,
+    "total_css_variables": 6
+  },
+  "css_variables": {
+    "--primary-color": "#007bff",
+    "--secondary-color": "#6c757d",
+    "--success-color": "#28a745",
+    "--danger-color": "#dc3545",
+    "--warning-color": "#ffc107",
+    "--info-color": "#17a2b8"
+  },
+  "colors": {
+    "#ff6b6b": {
+      "value": "#ff6b6b",
+      "normalized": "#ff6b6b",
+      "selectors": [
+        "span[style*=\"color\"]"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#007bff": {
+      "value": "#007bff",
+      "normalized": "#007bff",
+      "selectors": [
+        ".button",
+        ".text-primary",
+        ":root",
+        "input[type=\"text\"]:focus",
+        "a"
+      ],
+      "properties": [
+        "color",
+        "box-shadow",
+        "--primary-color",
+        "background-color"
+      ],
+      "frequency": 5
+    },
+    "#6c757d": {
+      "value": "#6c757d",
+      "normalized": "#6c757d",
+      "selectors": [
+        ".text-secondary",
+        ".text-muted",
+        ":root"
+      ],
+      "properties": [
+        "color",
+        "--secondary-color"
+      ],
+      "frequency": 3
+    },
+    "#28a745": {
+      "value": "#28a745",
+      "normalized": "#28a745",
+      "selectors": [
+        ":root",
+        ".button-success"
+      ],
+      "properties": [
+        "--success-color",
+        "background-color"
+      ],
+      "frequency": 2
+    },
+    "#dc3545": {
+      "value": "#dc3545",
+      "normalized": "#dc3545",
+      "selectors": [
+        ".button-danger",
+        ":root"
+      ],
+      "properties": [
+        "--danger-color",
+        "background-color"
+      ],
+      "frequency": 2
+    },
+    "#ffc107": {
+      "value": "#ffc107",
+      "normalized": "#ffc107",
+      "selectors": [
+        ":root"
+      ],
+      "properties": [
+        "--warning-color"
+      ],
+      "frequency": 1
+    },
+    "#17a2b8": {
+      "value": "#17a2b8",
+      "normalized": "#17a2b8",
+      "selectors": [
+        ":root"
+      ],
+      "properties": [
+        "--info-color"
+      ],
+      "frequency": 1
+    },
+    "#333333": {
+      "value": "#333333",
+      "normalized": "#333333",
+      "selectors": [
+        "body"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#ffffff": {
+      "value": "#ffffff",
+      "normalized": "#ffffff",
+      "selectors": [
+        "body",
+        ".button",
+        "input[type=\"text\"]"
+      ],
+      "properties": [
+        "color",
+        "background-color"
+      ],
+      "frequency": 3
+    },
+    "#1a1a1a": {
+      "value": "#1a1a1a",
+      "normalized": "#1a1a1a",
+      "selectors": [
+        "h1"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#2c2c2c": {
+      "value": "#2c2c2c",
+      "normalized": "#2c2c2c",
+      "selectors": [
+        "h2"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#0056b3": {
+      "value": "#0056b3",
+      "normalized": "#0056b3",
+      "selectors": [
+        "a:hover",
+        ".button",
+        ".button:hover"
+      ],
+      "properties": [
+        "border",
+        "color",
+        "background-color"
+      ],
+      "frequency": 3
+    },
+    "#1e7e34": {
+      "value": "#1e7e34",
+      "normalized": "#1e7e34",
+      "selectors": [
+        ".button-success"
+      ],
+      "properties": [
+        "border-color"
+      ],
+      "frequency": 1
+    },
+    "#c82333": {
+      "value": "#c82333",
+      "normalized": "#c82333",
+      "selectors": [
+        ".button-danger"
+      ],
+      "properties": [
+        "border-color"
+      ],
+      "frequency": 1
+    },
+    "#f8f9fa": {
+      "value": "#f8f9fa",
+      "normalized": "#f8f9fa",
+      "selectors": [
+        ".card"
+      ],
+      "properties": [
+        "background-color"
+      ],
+      "frequency": 1
+    },
+    "#dee2e6": {
+      "value": "#dee2e6",
+      "normalized": "#dee2e6",
+      "selectors": [
+        ".card"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#6610f2": {
+      "value": "#6610f2",
+      "normalized": "#6610f2",
+      "selectors": [
+        "a:visited"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#d4edda": {
+      "value": "#d4edda",
+      "normalized": "#d4edda",
+      "selectors": [
+        ".alert-success"
+      ],
+      "properties": [
+        "background-color"
+      ],
+      "frequency": 1
+    },
+    "#c3e6cb": {
+      "value": "#c3e6cb",
+      "normalized": "#c3e6cb",
+      "selectors": [
+        ".alert-success"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#155724": {
+      "value": "#155724",
+      "normalized": "#155724",
+      "selectors": [
+        ".alert-success"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#f8d7da": {
+      "value": "#f8d7da",
+      "normalized": "#f8d7da",
+      "selectors": [
+        ".alert-danger"
+      ],
+      "properties": [
+        "background-color"
+      ],
+      "frequency": 1
+    },
+    "#f5c6cb": {
+      "value": "#f5c6cb",
+      "normalized": "#f5c6cb",
+      "selectors": [
+        ".alert-danger"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#721c24": {
+      "value": "#721c24",
+      "normalized": "#721c24",
+      "selectors": [
+        ".alert-danger"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#fff3cd": {
+      "value": "#fff3cd",
+      "normalized": "#fff3cd",
+      "selectors": [
+        ".alert-warning"
+      ],
+      "properties": [
+        "background-color"
+      ],
+      "frequency": 1
+    },
+    "#ffeaa7": {
+      "value": "#ffeaa7",
+      "normalized": "#ffeaa7",
+      "selectors": [
+        ".alert-warning"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#856404": {
+      "value": "#856404",
+      "normalized": "#856404",
+      "selectors": [
+        ".alert-warning"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#d1ecf1": {
+      "value": "#d1ecf1",
+      "normalized": "#d1ecf1",
+      "selectors": [
+        ".alert-info"
+      ],
+      "properties": [
+        "background-color"
+      ],
+      "frequency": 1
+    },
+    "#bee5eb": {
+      "value": "#bee5eb",
+      "normalized": "#bee5eb",
+      "selectors": [
+        ".alert-info"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#0c5460": {
+      "value": "#0c5460",
+      "normalized": "#0c5460",
+      "selectors": [
+        ".alert-info"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#ced4da": {
+      "value": "#ced4da",
+      "normalized": "#ced4da",
+      "selectors": [
+        "input[type=\"text\"]"
+      ],
+      "properties": [
+        "border"
+      ],
+      "frequency": 1
+    },
+    "#495057": {
+      "value": "#495057",
+      "normalized": "#495057",
+      "selectors": [
+        "input[type=\"text\"]"
+      ],
+      "properties": [
+        "color"
+      ],
+      "frequency": 1
+    },
+    "#80bdff": {
+      "value": "#80bdff",
+      "normalized": "#80bdff",
+      "selectors": [
+        "input[type=\"text\"]:focus"
+      ],
+      "properties": [
+        "border-color"
+      ],
+      "frequency": 1
+    },
+    "#e9ecef": {
+      "value": "#e9ecef",
+      "normalized": "#e9ecef",
+      "selectors": [
+        ".divider"
+      ],
+      "properties": [
+        "border-bottom"
+      ],
+      "frequency": 1
+    }
+  },
+  "colors_by_category": {
+    "text": [
+      {
+        "color": "#ff6b6b",
+        "normalized": "#ff6b6b",
+        "selector": "span[style*=\"color\"]",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#6c757d",
+        "normalized": "#6c757d",
+        "selector": ".text-secondary",
+        "property": "color",
+        "frequency": 3
+      },
+      {
+        "color": "#333333",
+        "normalized": "#333333",
+        "selector": "body",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#ffffff",
+        "normalized": "#ffffff",
+        "selector": "body",
+        "property": "color",
+        "frequency": 3
+      },
+      {
+        "color": "#1a1a1a",
+        "normalized": "#1a1a1a",
+        "selector": "h1",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#2c2c2c",
+        "normalized": "#2c2c2c",
+        "selector": "h2",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#6610f2",
+        "normalized": "#6610f2",
+        "selector": "a:visited",
+        "property": "color",
+        "frequency": 1
+      }
+    ],
+    "interactive": [
+      {
+        "color": "#007bff",
+        "normalized": "#007bff",
+        "selector": ".button",
+        "property": "color",
+        "frequency": 5
+      },
+      {
+        "color": "#0056b3",
+        "normalized": "#0056b3",
+        "selector": "a:hover",
+        "property": "border",
+        "frequency": 3
+      },
+      {
+        "color": "#ced4da",
+        "normalized": "#ced4da",
+        "selector": "input[type=\"text\"]",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#495057",
+        "normalized": "#495057",
+        "selector": "input[type=\"text\"]",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#80bdff",
+        "normalized": "#80bdff",
+        "selector": "input[type=\"text\"]:focus",
+        "property": "border-color",
+        "frequency": 1
+      }
+    ],
+    "other": [
+      {
+        "color": "#28a745",
+        "normalized": "#28a745",
+        "selector": ":root",
+        "property": "--success-color",
+        "frequency": 2
+      },
+      {
+        "color": "#ffc107",
+        "normalized": "#ffc107",
+        "selector": ":root",
+        "property": "--warning-color",
+        "frequency": 1
+      },
+      {
+        "color": "#17a2b8",
+        "normalized": "#17a2b8",
+        "selector": ":root",
+        "property": "--info-color",
+        "frequency": 1
+      }
+    ],
+    "semantic_error": [
+      {
+        "color": "#dc3545",
+        "normalized": "#dc3545",
+        "selector": ".button-danger",
+        "property": "--danger-color",
+        "frequency": 2
+      },
+      {
+        "color": "#c82333",
+        "normalized": "#c82333",
+        "selector": ".button-danger",
+        "property": "border-color",
+        "frequency": 1
+      },
+      {
+        "color": "#f8d7da",
+        "normalized": "#f8d7da",
+        "selector": ".alert-danger",
+        "property": "background-color",
+        "frequency": 1
+      },
+      {
+        "color": "#f5c6cb",
+        "normalized": "#f5c6cb",
+        "selector": ".alert-danger",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#721c24",
+        "normalized": "#721c24",
+        "selector": ".alert-danger",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#fff3cd",
+        "normalized": "#fff3cd",
+        "selector": ".alert-warning",
+        "property": "background-color",
+        "frequency": 1
+      },
+      {
+        "color": "#ffeaa7",
+        "normalized": "#ffeaa7",
+        "selector": ".alert-warning",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#856404",
+        "normalized": "#856404",
+        "selector": ".alert-warning",
+        "property": "color",
+        "frequency": 1
+      },
+      {
+        "color": "#d1ecf1",
+        "normalized": "#d1ecf1",
+        "selector": ".alert-info",
+        "property": "background-color",
+        "frequency": 1
+      },
+      {
+        "color": "#bee5eb",
+        "normalized": "#bee5eb",
+        "selector": ".alert-info",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#0c5460",
+        "normalized": "#0c5460",
+        "selector": ".alert-info",
+        "property": "color",
+        "frequency": 1
+      }
+    ],
+    "semantic_success": [
+      {
+        "color": "#1e7e34",
+        "normalized": "#1e7e34",
+        "selector": ".button-success",
+        "property": "border-color",
+        "frequency": 1
+      },
+      {
+        "color": "#d4edda",
+        "normalized": "#d4edda",
+        "selector": ".alert-success",
+        "property": "background-color",
+        "frequency": 1
+      },
+      {
+        "color": "#c3e6cb",
+        "normalized": "#c3e6cb",
+        "selector": ".alert-success",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#155724",
+        "normalized": "#155724",
+        "selector": ".alert-success",
+        "property": "color",
+        "frequency": 1
+      }
+    ],
+    "background": [
+      {
+        "color": "#f8f9fa",
+        "normalized": "#f8f9fa",
+        "selector": ".card",
+        "property": "background-color",
+        "frequency": 1
+      }
+    ],
+    "border": [
+      {
+        "color": "#dee2e6",
+        "normalized": "#dee2e6",
+        "selector": ".card",
+        "property": "border",
+        "frequency": 1
+      },
+      {
+        "color": "#e9ecef",
+        "normalized": "#e9ecef",
+        "selector": ".divider",
+        "property": "border-bottom",
+        "frequency": 1
+      }
+    ]
+  },
+  "fonts": {
+    "Helvetica Neue\"": {
+      "family": "\"Helvetica Neue\", Arial, sans-serif",
+      "sizes": {
+        "16px": 1
+      },
+      "weights": {},
+      "line_heights": {
+        "1.5": 1
+      },
+      "frequency": 1
+    },
+    "Georgia": {
+      "family": "Georgia, serif",
+      "sizes": {
+        "32px": 1
+      },
+      "weights": {
+        "bold": 1
+      },
+      "line_heights": {},
+      "frequency": 1
+    }
+  }
+}
