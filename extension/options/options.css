@@ -125,13 +125,13 @@ header p {
   vertical-align: middle;
 }
 
-.setting-item label:has(input[type="checkbox"]) {
+.setting-item label.checkbox-label {
   display: flex;
   align-items: center;
   cursor: pointer;
 }
 
-.setting-item label:has(input[type="checkbox"]) span {
+.setting-item label.checkbox-label span {
   font-weight: 600;
 }
 
