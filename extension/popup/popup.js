@@ -33,6 +33,8 @@ function toggleWidget(enabled) {
       updateStatusBadge(enabled);
       
       // Reload all tabs to apply changes
+      // Note: For better UX, this could be replaced with message passing
+      // to dynamically show/hide the widget without reloading pages
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach(tab => {
           if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {

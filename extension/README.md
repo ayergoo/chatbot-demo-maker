@@ -128,7 +128,7 @@ extension/
 ## Technical Details
 
 - **Manifest Version**: V3
-- **Permissions**: `storage`, `activeTab`
+- **Permissions**: `storage`, `activeTab`, `tabs`
 - **Storage**: Uses `chrome.storage.sync` for cross-device syncing
 - **Injection**: Content script runs on all URLs at document_idle
 - **Framework**: Vanilla JavaScript (no external dependencies)
@@ -192,6 +192,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Future Enhancements
 
+- [ ] Message passing for dynamic enable/disable (avoid page reloads)
 - [ ] Import scenarios from `chatbot_scenario.json` files
 - [ ] Multiple preset themes
 - [ ] Position customization (left/right, top/bottom)
