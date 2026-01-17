@@ -15,6 +15,23 @@ import time
 import json
 from typing import Optional
 
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
+import importlib.util
+
+def _load_webpage_analyzer():
+    analyzer_path = os.path.join(PROJECT_ROOT, 'color_font_analyzer.py')
+    if not os.path.exists(analyzer_path):
+        raise ModuleNotFoundError(f"color_font_analyzer.py not found at {analyzer_path}")
+    spec = importlib.util.spec_from_file_location('color_font_analyzer', analyzer_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.WebpageAnalyzer
+
+WebpageAnalyzer = _load_webpage_analyzer()
+
 SAVE_PATH_BASE = "C:/Data/scraped_websites/"
 SAVE_PATH_DOMAIN = SAVE_PATH_BASE + "{domain}/"
 SAVE_RAW = SAVE_PATH_DOMAIN + "raw/"
@@ -31,6 +48,7 @@ class WebsiteScraper:
         self.pages_content = []
         self.render_js = render_js
         self.render_timeout_ms = render_timeout_ms
+        self.homepage_theme = None
         
     def is_valid_url(self, url):
         """Check if URL belongs to the same domain"""
@@ -88,11 +106,25 @@ class WebsiteScraper:
             if not html:
                 return None, []
             
+            soup = BeautifulSoup(html, 'html.parser')
+
+            if url == self.base_url and self.homepage_theme is None:
+                analyzer = WebpageAnalyzer(
+                    url,
+                    timeout=max(10, int(self.render_timeout_ms / 1000)),
+                    skip_fetch=True,
+                    html_content=html,
+                    soup=soup,
+                    use_playwright=True
+                )
+                result = analyzer.analyze()
+                if result:
+                    self.homepage_theme = result.to_dict().get('widgetTheme')
+
             text = self.extract_text_from_html(html)
             print('page char length: ', len(text))
-            # Extract links for further crawling
-            soup = BeautifulSoup(html, 'html.parser')
             
+            # Extract links for further crawling
             links = []
             for link in soup.find_all('a', href=True):
                 href = link.get('href') or ''
@@ -423,6 +455,7 @@ def main():
         json.dump({
             'source_url': url,
             'pages_scraped': len(pages_content),
+            'widget_theme': scraper.homepage_theme,
             'scenario': scenario,
         }, f, indent=2)
     

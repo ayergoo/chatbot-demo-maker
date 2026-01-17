@@ -15,6 +15,7 @@ import requests
 from bs4 import BeautifulSoup
 import tinycss2
 import webcolors
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 
 
 class ColorNormalizer:
@@ -397,11 +398,14 @@ class FontExtractor:
 class WebpageAnalyzer:
     """Main analyzer for webpage color and typography"""
     
-    def __init__(self, url: str, timeout: int = 10):
+    def __init__(self, url: str, timeout: int = 10, skip_fetch: bool = False, 
+                 html_content = None, soup = None, use_playwright: bool = True):
         self.url = url
         self.timeout = timeout
-        self.html_content = None
-        self.soup = None
+        self.html_content = html_content
+        self.soup = soup
+        self.skip_fetch = skip_fetch
+        self.use_playwright = use_playwright
         self.color_extractor = ColorExtractor()
         self.font_extractor = FontExtractor()
         self.css_variables = {}
@@ -436,12 +440,33 @@ class WebpageAnalyzer:
     
     def analyze(self) -> 'AnalysisResult':
         """Perform complete analysis"""
-        if not self.fetch_webpage():
-            return None
-        
         print(f"Analyzing: {self.url}")
+        if self.use_playwright:
+            print("  - Sampling computed styles with Playwright...")
+            samples = self._sample_elements_with_playwright()
+            if not samples:
+                return None
+            print("  - Filtering and ranking colors...")
+            processed_samples, ranked_colors, tokens = self._process_samples(samples)
+            print("  - Analyzing complete!")
+            return AnalysisResult(
+                url=self.url,
+                colors={},
+                colors_by_category={},
+                fonts={},
+                css_variables={},
+                computed_samples=processed_samples,
+                ranked_colors=ranked_colors,
+                tokens=tokens
+            )
         
-        # Extract from inline styles
+        if not self.skip_fetch:
+            if not self.fetch_webpage():
+                return None
+        
+        if any(item is None for item in [self.html_content, self.soup]):
+            return None
+
         print("  - Extracting inline styles...")
         for element in self.soup.find_all(style=True):
             tag_name = element.name
@@ -449,12 +474,10 @@ class WebpageAnalyzer:
             selector = f"{tag_name}.{classes}" if classes else tag_name
             self.color_extractor.extract_from_inline_style(element, selector)
         
-        # Extract from <style> tags
         print("  - Parsing <style> tags...")
         for style_tag in self.soup.find_all('style'):
             self._parse_css(style_tag.string or '')
         
-        # Extract from external CSS files
         print("  - Fetching external CSS files...")
         for link in self.soup.find_all('link', rel='stylesheet'):
             href = link.get('href')
@@ -472,6 +495,295 @@ class WebpageAnalyzer:
             fonts=dict(self.font_extractor.fonts),
             css_variables=self.css_variables
         )
+
+    def _sample_elements_with_playwright(self) -> List[Dict]:
+        """Use Playwright to sample computed styles from real elements"""
+        script = r"""
+() => {
+  const samples = [];
+  const toNumber = (v) => {
+    const n = parseFloat(v || '0');
+    return Number.isFinite(n) ? n : 0;
+  };
+  const getSelector = (el) => {
+    const cls = el.className && typeof el.className === 'string' ? el.className.trim().split(/\s+/).slice(0, 2) : [];
+    const clsPart = cls.length ? '.' + cls.join('.') : '';
+    return el.tagName.toLowerCase() + clsPart;
+  };
+  const pushEl = (el, type) => {
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const style = window.getComputedStyle(el);
+    samples.push({
+      type,
+      tag: el.tagName.toLowerCase(),
+      selector: getSelector(el),
+      width: rect.width,
+      height: rect.height,
+      area: rect.width * rect.height,
+      color: style.color,
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      borderTopWidth: style.borderTopWidth,
+      borderRightWidth: style.borderRightWidth,
+      borderBottomWidth: style.borderBottomWidth,
+      borderLeftWidth: style.borderLeftWidth
+    });
+  };
+
+  pushEl(document.body, 'body');
+  pushEl(document.querySelector('main'), 'main');
+
+  const topByArea = (elements, limit) => {
+    return elements
+      .map(el => ({ el, area: el.getBoundingClientRect().width * el.getBoundingClientRect().height }))
+      .filter(item => item.area > 0)
+      .sort((a, b) => b.area - a.area)
+      .slice(0, limit)
+      .map(item => item.el);
+  };
+
+  const containers = topByArea(Array.from(document.querySelectorAll('main, section, article, div, .card, .panel, .container, [class*="card"], [class*="panel"], [class*="section"]')), 6);
+  containers.forEach(el => pushEl(el, 'container'));
+
+  const buttons = topByArea(Array.from(document.querySelectorAll('button, [role="button"], .btn, .button, input[type="button"], input[type="submit"]')), 6);
+  buttons.forEach(el => pushEl(el, 'button'));
+
+  const links = topByArea(Array.from(document.querySelectorAll('a[href]')), 8);
+  links.forEach(el => pushEl(el, 'link'));
+
+  const headings = topByArea(Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, h6')), 10);
+  headings.forEach(el => pushEl(el, 'heading'));
+
+  const paragraphs = topByArea(Array.from(document.querySelectorAll('p')), 10);
+  paragraphs.forEach(el => pushEl(el, 'paragraph'));
+
+  return samples;
+}
+"""
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                page.goto(self.url, timeout=self.timeout * 1000, wait_until='domcontentloaded')
+                samples = page.evaluate(script)
+                browser.close()
+                return samples or []
+        except PlaywrightTimeoutError:
+            print(f"Error: Playwright timeout after {self.timeout} seconds")
+            return []
+        except Exception as e:
+            print(f"Error: Playwright failed - {e}")
+            return []
+
+    def _process_samples(self, samples: List[Dict]) -> Tuple[List[Dict], Dict, Dict]:
+        """Filter sampled elements, rank colors by visual impact, and infer tokens"""
+        processed_samples = []
+        items = []
+
+        for sample in samples:
+            width = float(sample.get('width', 0))
+            height = float(sample.get('height', 0))
+            area = float(sample.get('area', 0))
+            if area <= 0:
+                continue
+
+            border_widths = [
+                self._safe_float(sample.get('borderTopWidth')),
+                self._safe_float(sample.get('borderRightWidth')),
+                self._safe_float(sample.get('borderBottomWidth')),
+                self._safe_float(sample.get('borderLeftWidth'))
+            ]
+            has_visible_border = any(w >= 1 for w in border_widths)
+
+            is_tiny = width <= 1 or height <= 1 or area <= 1
+
+            color = self._normalize_computed_color(sample.get('color'))
+            background = self._normalize_computed_color(sample.get('backgroundColor'))
+            border = self._normalize_computed_color(sample.get('borderColor'))
+
+            if is_tiny and not has_visible_border:
+                color = None
+                background = None
+
+            if border and not has_visible_border:
+                border = None
+
+            filtered = {
+                'type': sample.get('type'),
+                'tag': sample.get('tag'),
+                'selector': sample.get('selector'),
+                'width': width,
+                'height': height,
+                'area': area,
+                'color': color,
+                'backgroundColor': background,
+                'borderColor': border
+            }
+
+            if not any([color, background, border]):
+                continue
+
+            processed_samples.append(filtered)
+
+            if color:
+                items.append({
+                    'role': 'text',
+                    'color': color,
+                    'area': area,
+                    'type': sample.get('type')
+                })
+            if background:
+                items.append({
+                    'role': 'background',
+                    'color': background,
+                    'area': area,
+                    'type': sample.get('type')
+                })
+            if border:
+                items.append({
+                    'role': 'border',
+                    'color': border,
+                    'area': area,
+                    'type': sample.get('type')
+                })
+
+        ranked_colors = self._rank_colors(items)
+        tokens = self._infer_tokens(items, ranked_colors)
+
+        return processed_samples, ranked_colors, tokens
+
+    def _rank_colors(self, items: List[Dict]) -> Dict[str, List[Dict]]:
+        """Rank colors by visual impact: score = area_sum * occurrence_count"""
+        counts = defaultdict(int)
+        area_sums = defaultdict(float)
+        type_sets = defaultdict(set)
+
+        for item in items:
+            key = (item['role'], item['color'])
+            counts[key] += 1
+            area_sums[key] += item['area']
+            type_sets[key].add(item.get('type'))
+
+        ranked = defaultdict(list)
+        for (role, color), count in counts.items():
+            score = area_sums[(role, color)] * count
+            ranked[role].append({
+                'color': color,
+                'score': score,
+                'occurrence_count': count,
+                'area_sum': area_sums[(role, color)],
+                'sample_types': sorted(type_sets[(role, color)])
+            })
+
+        for role in ranked:
+            ranked[role].sort(key=lambda x: x['score'], reverse=True)
+
+        return dict(ranked)
+
+    def _infer_tokens(self, items: List[Dict], ranked_colors: Dict[str, List[Dict]]) -> Dict[str, Optional[str]]:
+        """Infer widget tokens from ranked colors"""
+        def top_color_for(role: str, allowed_types: Set[str]) -> Optional[str]:
+            filtered = [item for item in items if item['role'] == role and item.get('type') in allowed_types]
+            if not filtered:
+                return None
+            ranked = self._rank_colors(filtered).get(role, [])
+            return ranked[0]['color'] if ranked else None
+
+        def top_colors_for(role: str, allowed_types: Set[str], limit: int = 3) -> List[str]:
+            filtered = [item for item in items if item['role'] == role and item.get('type') in allowed_types]
+            ranked = self._rank_colors(filtered).get(role, [])
+            return [entry['color'] for entry in ranked[:limit]]
+
+        widget_bg = top_color_for('background', {'body', 'main', 'container'})
+        border = top_color_for('border', {'container', 'body', 'main'})
+        text_primary = top_color_for('text', {'heading', 'paragraph'})
+
+        text_candidates = top_colors_for('text', {'heading', 'paragraph'}, limit=3)
+        text_muted = text_candidates[1] if len(text_candidates) > 1 else None
+
+        accent = top_color_for('background', {'button'})
+        if not accent:
+            accent = top_color_for('text', {'link'})
+
+        accent_hover = None
+        if accent:
+            for color in top_colors_for('background', {'button'}, limit=3):
+                if color != accent:
+                    accent_hover = color
+                    break
+
+        bot_bubble_bg = top_color_for('background', {'container'}) or widget_bg
+        user_bubble_bg = accent or top_color_for('background', {'link'})
+        user_bubble_text = None
+        if user_bubble_bg:
+            user_bubble_text = '#ffffff' if self._is_dark_color(user_bubble_bg) else '#000000'
+
+        return {
+            'widgetBg': widget_bg,
+            'border': border,
+            'textPrimary': text_primary,
+            'textMuted': text_muted,
+            'accent': accent,
+            'accentHover': accent_hover,
+            'botBubbleBg': bot_bubble_bg,
+            'userBubbleBg': user_bubble_bg,
+            'userBubbleText': user_bubble_text
+        }
+
+    def _normalize_computed_color(self, color_str: Optional[str]) -> Optional[str]:
+        """Normalize computed color and filter transparent/garbage values"""
+        if not color_str:
+            return None
+
+        lowered = color_str.strip().lower()
+        if 'var(--tw-' in lowered:
+            return None
+
+        if lowered in ['transparent', 'none', 'initial', 'inherit', 'unset']:
+            return None
+
+        if self._is_fully_transparent(lowered):
+            return None
+
+        return ColorNormalizer.normalize_color(lowered)
+
+    @staticmethod
+    def _is_fully_transparent(color_str: str) -> bool:
+        """Return True if the color string is fully transparent"""
+        rgba_match = re.match(r'rgba\s*\([^,]+,[^,]+,[^,]+,\s*([0-9.]+)\s*\)', color_str)
+        if rgba_match:
+            try:
+                return float(rgba_match.group(1)) <= 0
+            except ValueError:
+                return False
+
+        if color_str.startswith('#'):
+            hex_color = color_str.lstrip('#')
+            if len(hex_color) == 4:
+                return hex_color[3] == '0'
+            if len(hex_color) == 8:
+                return hex_color[6:8] == '00'
+
+        return False
+
+    @staticmethod
+    def _safe_float(value: Optional[str]) -> float:
+        try:
+            return float(str(value).replace('px', '').strip())
+        except Exception:
+            return 0.0
+
+    @staticmethod
+    def _is_dark_color(hex_color: str) -> bool:
+        """Return True if color is dark based on luminance"""
+        if not hex_color:
+            return False
+        try:
+            return ColorNormalizer.calculate_luminance(hex_color) < 0.5
+        except Exception:
+            return False
     
     def _parse_css(self, css_content: str):
         """Parse CSS content and extract colors and fonts"""
@@ -532,12 +844,17 @@ class WebpageAnalyzer:
 class AnalysisResult:
     """Container for analysis results"""
     
-    def __init__(self, url: str, colors: Dict, colors_by_category: Dict, fonts: Dict, css_variables: Dict):
+    def __init__(self, url: str, colors: Dict, colors_by_category: Dict, fonts: Dict, css_variables: Dict,
+                 computed_samples: Optional[List[Dict]] = None, ranked_colors: Optional[Dict] = None,
+                 tokens: Optional[Dict] = None):
         self.url = url
         self.colors = colors
         self.colors_by_category = colors_by_category
         self.fonts = fonts
         self.css_variables = css_variables
+        self.computed_samples = computed_samples or []
+        self.ranked_colors = ranked_colors or {}
+        self.tokens = tokens or {}
     
     def get_summary(self) -> Dict:
         """Get summary statistics"""
@@ -545,6 +862,7 @@ class AnalysisResult:
             'total_unique_colors': len(self.colors),
             'total_unique_fonts': len(self.fonts),
             'total_css_variables': len(self.css_variables),
+            'total_computed_samples': len(self.computed_samples),
             'colors_by_category': {
                 category: len(colors) for category, colors in self.colors_by_category.items()
             }
@@ -582,7 +900,11 @@ class AnalysisResult:
             'colors': colors_dict,
             'colors_by_category': self.colors_by_category,
             'fonts': fonts_dict,
-            'css_variables': self.css_variables
+            'css_variables': self.css_variables,
+            'computed_samples': self.computed_samples,
+            'ranked_colors': self.ranked_colors,
+            'tokens': self.tokens,
+            'widgetTheme': self.tokens
         }
     
     def print_report(self):
@@ -598,6 +920,23 @@ class AnalysisResult:
         print(f"Total unique colors: {summary['total_unique_colors']}")
         print(f"Total unique fonts: {summary['total_unique_fonts']}")
         print(f"CSS variables defined: {summary['total_css_variables']}")
+        print(f"Computed samples: {summary['total_computed_samples']}")
+
+        # Ranked colors
+        if self.ranked_colors:
+            print("\n--- RANKED COLORS (VISUAL IMPACT) ---")
+            for role, items in self.ranked_colors.items():
+                print(f"\n{role.upper()}:")
+                for item in items[:5]:
+                    print(f"  • {item['color']} | score: {item['score']:.2f} | count: {item['occurrence_count']}")
+
+        # Tokens
+        if self.tokens:
+            print("\n--- INFERRED TOKENS ---")
+            print(f"widgetBg: {self.tokens.get('widgetBg')}")
+            print(f"textPrimary: {self.tokens.get('textPrimary')}")
+            print(f"accent: {self.tokens.get('accent')}")
+            print(f"widgetTheme: {self.tokens}")
         
         # Colors by category
         print("\n--- COLORS BY CATEGORY ---")
