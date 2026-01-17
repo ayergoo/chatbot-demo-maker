@@ -33,6 +33,12 @@ wheels/
 # Output files
 chatbot_scenario.json
 
+# Test/demo files
+demo_preview.html
+widget_demo.html
+test_page.html
+IMPLEMENTATION_SUMMARY.md
+
 # Environment
 .env
 .envrc

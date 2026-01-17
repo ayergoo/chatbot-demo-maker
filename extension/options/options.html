@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot Widget Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Chatbot Demo Widget Settings</h1>
+      <p>Customize your chatbot widget appearance and behavior</p>
+    </header>
+
+    <div class="settings-grid">
+      <!-- Enable/Disable Widget -->
+      <section class="settings-section">
+        <h2>General Settings</h2>
+        <div class="setting-item">
+          <label for="enabled" class="checkbox-label">
+            <input type="checkbox" id="enabled" checked>
+            <span>Enable Widget</span>
+          </label>
+          <p class="description">Show the chatbot widget on all web pages</p>
+        </div>
+      </section>
+
+      <!-- Color Settings -->
+      <section class="settings-section">
+        <h2>Colors</h2>
+        <div class="setting-item">
+          <label for="primaryColor">Primary Color</label>
+          <input type="color" id="primaryColor" value="#007bff">
+          <p class="description">Icon and header background color</p>
+        </div>
+        <div class="setting-item">
+          <label for="secondaryColor">Secondary Color</label>
+          <input type="color" id="secondaryColor" value="#6c757d">
+          <p class="description">Secondary elements and accents</p>
+        </div>
+        <div class="setting-item">
+          <label for="botMessageColor">Bot Message Color</label>
+          <input type="color" id="botMessageColor" value="#e9ecef">
+          <p class="description">Background color for bot messages</p>
+        </div>
+        <div class="setting-item">
+          <label for="userMessageColor">User Message Color</label>
+          <input type="color" id="userMessageColor" value="#007bff">
+          <p class="description">Background color for user messages</p>
+        </div>
+        <div class="setting-item">
+          <label for="textPrimaryColor">Primary Text Color</label>
+          <input type="color" id="textPrimaryColor" value="#ffffff">
+          <p class="description">Text color for primary elements</p>
+        </div>
+        <div class="setting-item">
+          <label for="textSecondaryColor">Secondary Text Color</label>
+          <input type="color" id="textSecondaryColor" value="#000000">
+          <p class="description">Text color for secondary elements</p>
+        </div>
+      </section>
+
+      <!-- Font Settings -->
+      <section class="settings-section">
+        <h2>Font</h2>
+        <div class="setting-item">
+          <label for="fontFamily">Font Family</label>
+          <select id="fontFamily">
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="'Helvetica Neue', Helvetica, sans-serif">Helvetica</option>
+            <option value="'Segoe UI', Tahoma, Geneva, sans-serif">Segoe UI</option>
+            <option value="'Roboto', sans-serif">Roboto</option>
+            <option value="'Open Sans', sans-serif">Open Sans</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', Times, serif">Times New Roman</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="fontSize">Font Size</label>
+          <select id="fontSize">
+            <option value="12px">Small (12px)</option>
+            <option value="14px" selected>Medium (14px)</option>
+            <option value="16px">Large (16px)</option>
+            <option value="18px">Extra Large (18px)</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Scenario Settings -->
+      <section class="settings-section full-width">
+        <h2>Demo Scenario</h2>
+        <div class="setting-item">
+          <label for="suggestedQuestion">Suggested Question</label>
+          <input type="text" id="suggestedQuestion" class="text-input" 
+                 placeholder="How can I help you today?" value="How can I help you today?">
+          <p class="description">The initial question displayed in the suggestion bubble</p>
+        </div>
+        
+        <div class="setting-item">
+          <label>Response Scenarios</label>
+          <p class="description">Add trigger phrases and their corresponding answers</p>
+          <div id="responsesContainer">
+            <!-- Response items will be added here dynamically -->
+          </div>
+          <button type="button" id="addResponse" class="btn-secondary">+ Add Response</button>
+        </div>
+
+        <div class="setting-item">
+          <label for="defaultResponse">Default Response</label>
+          <textarea id="defaultResponse" class="text-input" rows="3" 
+                    placeholder="Default response for unmatched queries">Thank you for your question! This is a demo chatbot. In a live version, I would provide detailed answers to your queries.</textarea>
+          <p class="description">Response shown when no trigger phrase matches</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button type="button" id="saveSettings" class="btn-primary">Save Settings</button>
+      <button type="button" id="resetSettings" class="btn-secondary">Reset to Defaults</button>
+    </div>
+
+    <!-- Status Message -->
+    <div id="statusMessage" class="status-message"></div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

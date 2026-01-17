@@ -1,9 +1,10 @@
 # Chatbot Demo Maker
 
-Automatically scrapes website content and creates chatbot demo scenarios using OpenAI API.
+Automatically scrapes website content and creates chatbot demo scenarios using OpenAI API. Also includes a Chrome extension to showcase your chatbot demos on any web page!
 
 ## Features
 
+### Python Script
 - 🕷️ **Website Scraping**: Automatically crawls and scrapes all pages from a given URL
 - 🧹 **Text Cleaning**: Uses OpenAI API to clean and format extracted text
 - 🤖 **Scenario Generation**: Creates realistic chatbot demo scenarios with:
@@ -12,7 +13,15 @@ Automatically scrapes website content and creates chatbot demo scenarios using O
   - A followup question
   - A detailed answer
 
+### Chrome Extension
+- 💬 **Interactive Widget**: Display a customizable chatbot widget on any web page
+- 🎨 **Full Customization**: Configure colors, fonts, and demo scenarios
+- 📱 **Responsive Design**: Works seamlessly on all screen sizes
+- ⚡ **Lightweight**: Pure vanilla JavaScript with no external dependencies
+
 ## Installation
+
+### Python Script
 
 1. Clone the repository:
 ```bash
@@ -30,9 +39,19 @@ pip install -r requirements.txt
 export OPENAI_API_KEY='your-api-key-here'
 ```
 
+### Chrome Extension
+
+1. Open Chrome and navigate to `chrome://extensions/`
+2. Enable "Developer mode" in the top right corner
+3. Click "Load unpacked"
+4. Select the `extension` folder from this project
+5. The extension is now installed and ready to use!
+
+See [extension/README.md](extension/README.md) for detailed instructions and customization options.
+
 ## Usage
 
-### Command Line
+### Python Script - Command Line
 
 Run the script with a URL as an argument:
 ```bash
@@ -43,6 +62,15 @@ Or run without arguments to be prompted for a URL:
 ```bash
 python chatbot_demo_maker.py
 ```
+
+### Chrome Extension
+
+1. Click the extension icon in the Chrome toolbar to enable/disable the widget
+2. The chatbot widget appears in the bottom-right corner of every web page
+3. Click the chat icon to open the chat window
+4. Click "Open Settings" to customize colors, fonts, and demo scenarios
+
+For detailed usage instructions, see [extension/README.md](extension/README.md).
 
 ### Example Output
 
@@ -101,9 +129,32 @@ You can modify these parameters in the code:
 
 ## Requirements
 
+### Python Script
 - Python 3.7+
 - OpenAI API key
 - Internet connection
+
+### Chrome Extension
+- Chrome 88+ or any Chromium-based browser (Edge, Brave, Opera)
+- No external dependencies required
+
+## Project Structure
+
+```
+chatbot-demo-maker/
+├── scenario_maker/          # Python web scraping and scenario generation
+│   ├── chatbot_demo_maker.py
+│   └── test_chatbot_demo_maker.py
+├── extension/               # Chrome extension for widget display
+│   ├── manifest.json
+│   ├── icons/
+│   ├── content/            # Widget injected into pages
+│   ├── options/            # Settings page
+│   ├── popup/              # Extension popup
+│   └── README.md
+├── requirements.txt
+└── README.md
+```
 
 ## License
 
